@@ -3,12 +3,8 @@ package com.example.ExchangeRateService.util;
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
 
 @XmlRootElement(name = "channel")
-@Getter
-@Setter
 public class Channel {
   private List<Item> item;
 

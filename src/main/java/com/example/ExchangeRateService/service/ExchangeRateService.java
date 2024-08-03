@@ -65,10 +65,10 @@ public class ExchangeRateService {
     if (exchangeRate.isPresent()) {
       log.info("Exchange rate found for currency: {} with rate: {}",
           currency, exchangeRate.get().getRate());
-      
+
       return exchangeRate.get().getRate();
     } else {
-      log.warn("Exchange rate not found for currency: {}", currency);
+      log.error("Exchange rate not found for currency: {}", currency);
       throw new ExchangeRateNotFoundException("Exchange rate not found for currency: " + currency);
     }
   }
@@ -78,15 +78,11 @@ public class ExchangeRateService {
 
     double fromRate = getExchangeRate(from);
     double toRate = getExchangeRate(to);
-    double convertedAmount = (fromRate != 0 && toRate != 0) ? (amount / fromRate) * toRate : 0.0;
+    double convertedAmount = amount * fromRate / toRate;
 
-    log.info(
-        "Converted amount: {} from currency: {} to currency: {} is: {}",
-        amount,
-        from,
-        to,
-        convertedAmount);
-    
+    log.info("Converted amount: {} from currency: {} to currency: {} is: {}",
+        amount, from, to, convertedAmount);
+
     return convertedAmount;
   }
 }

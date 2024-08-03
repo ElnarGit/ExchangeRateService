@@ -2,12 +2,8 @@ package com.example.ExchangeRateService.util;
 
 import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
-import lombok.Getter;
-import lombok.Setter;
 
 @XmlRootElement(name = "item")
-@Getter
-@Setter
 public class Item {
   private String title;
   private String description;
