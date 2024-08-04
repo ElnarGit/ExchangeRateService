@@ -26,7 +26,8 @@ public class ExchangeRateRestControllerV1 {
 
   @GetMapping("/convert")
   @ResponseStatus(HttpStatus.OK)
-  public double convert(@RequestParam double amount, @RequestParam String from, @RequestParam String to) {
+  public double convert(
+      @RequestParam double amount, @RequestParam String from, @RequestParam String to) {
     try {
       return exchangeRateService.convertCurrency(amount, from.toUpperCase(), to.toUpperCase());
     } catch (ResponseStatusException e) {

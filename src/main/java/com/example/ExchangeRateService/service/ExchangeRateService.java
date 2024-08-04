@@ -13,40 +13,67 @@ import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
 public class ExchangeRateService {
 
-  public static final String EXCHANGE_RATE_URL = "https://nationalbank.kz/rss/rates_all.xml";
-
+  private static final Unmarshaller UNMARSHALLER;
   private final ExchangeRateRepository exchangeRateRepository;
+  private final URL nationBankRatesUrl;
 
-  @Scheduled(cron = "0 * * * * *")
+  static {
+    try {
+      JAXBContext context = JAXBContext.newInstance(Rss.class);
+      UNMARSHALLER = context.createUnmarshaller();
+    } catch (JAXBException e) {
+      log.error("Could not create JAXB Unmarshaller", e);
+      throw new RuntimeException("Could not create JAXB context", e);
+    }
+  }
+
+  public ExchangeRateService(ExchangeRateRepository exchangeRateRepository,
+      @Value("${national-bank.rates-url}") String ratesUrl) {
+    this.exchangeRateRepository = exchangeRateRepository;
+    try {
+      this.nationBankRatesUrl = new URL(ratesUrl);
+    } catch (MalformedURLException e) {
+      throw new RuntimeException("Could not create URL", e);
+    }
+  }
+
   @Transactional
-  public void fetchExchangeRates() throws JAXBException, MalformedURLException {
+  @Scheduled(cron = "${loader.crone}")
+  public void fetchExchangeRates() {
     log.info("Starting fetchExchangeRates task");
 
     Optional<ExchangeRate> latestRate = exchangeRateRepository.findTopByOrderByDateDesc();
+    
     if (latestRate.isPresent()
         && Duration.between(latestRate.get().getDate(), LocalDateTime.now()).toDays() < 1) {
       log.info("Exchange rates are up to date. Skipping fetch.");
       return;
     }
 
-    JAXBContext context = JAXBContext.newInstance(Rss.class);
-    Unmarshaller unmarshaller = context.createUnmarshaller();
-    URL url = new URL(EXCHANGE_RATE_URL);
-    Rss rss = (Rss) unmarshaller.unmarshal(url);
+    Rss rss;
+    try {
+      rss = (Rss) UNMARSHALLER.unmarshal(nationBankRatesUrl);
+    } catch (JAXBException e) {
+      throw new RuntimeException("Could not unmarshal Rss", e);
+    }
 
     LocalDateTime now = LocalDateTime.now();
+
+    // Удаление старых записей
+    exchangeRateRepository.deleteByDateBefore(now);
+    log.info("Old exchange rates deleted");
+
     for (Item item : rss.getChannel().getItem()) {
       double rate = Double.parseDouble(item.getDescription()) / Integer.parseInt(item.getQuant());
       ExchangeRate exchangeRate =

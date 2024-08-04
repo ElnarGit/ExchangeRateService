@@ -14,7 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,7 +22,7 @@ public class ExchangeRateServiceTests {
 
   @Mock private ExchangeRateRepository exchangeRateRepository;
 
-  @InjectMocks private ExchangeRateService exchangeRateService;
+  private ExchangeRateService exchangeRateService;
 
   private ExchangeRate exchangeRate;
 
@@ -31,6 +30,10 @@ public class ExchangeRateServiceTests {
   void setUp() {
     exchangeRate =
         ExchangeRate.builder().currency("USD").rate(470).date(LocalDateTime.now()).build();
+
+    exchangeRateService =
+        new ExchangeRateService(
+            exchangeRateRepository, "https://nationalbank.kz/rss/rates_all.xml");
   }
 
   @Test
